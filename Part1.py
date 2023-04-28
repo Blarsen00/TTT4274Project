@@ -1,11 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from enum import Enum
 
-# class Genre(Enum):
-#     pop = 1
 
+genreMap = {"pop": 0, "disco": 1, "metal" : 2, "classical" : 3, "rock" : 4,
+            "blues" : 5, "reggae" : 6, "hiphop" : 7, "country" : 8, "jazz" : 9}
 
 # ClassData5  = pd.read_table("Classification music(1)\Classification music\GenreClassData_5s.txt")
 # ClassData10 = pd.read_table("Classification music(1)\Classification music\GenreClassData_10s.txt")
@@ -33,20 +32,25 @@ def euclidianDistance(x, u):
     return np.matmul(np.transpose(x-u), (x-u))
 
 
-def NNclassifier(testSet, references, distance=euclidianDistance, k=5, 
-    features=['spectral_rolloff_mean', 'mfcc_1_mean', 'spectral_centroid_mean', 'tempo']):
-    mapIndex = {"pop": 0, "disco": 1, "metal" : 2, "classical" : 3, "rock" : 4,
-                "blues" : 5, "reggae" : 6, "hiphop" : 7, "country" : 8,
-                "jazz" : 9}
+def NNclassifier(testSet, 
+        references, 
+        mapIndex=genreMap, 
+        distance=euclidianDistance, k=5, 
+        features=['spectral_rolloff_mean', 'mfcc_1_mean', 'spectral_centroid_mean', 'tempo']):
+    
+    # mapIndex = {"pop": 0, "disco": 1, "metal" : 2, "classical" : 3, "rock" : 4,
+    #             "blues" : 5, "reggae" : 6, "hiphop" : 7, "country" : 8,
+    #             "jazz" : 9}
     # closestPoints = [(np.inf, 'Genre')] * k
     # furthestPoint = np.inf
 
     # closestPoints = pd.DataFrame(
     #     {"Distance" : np.full((1,k), np.inf),
     #     "Genre"    : np.full((1,k), "Genre")})
-    confusionMatrix = pd.DataFrame(0,index=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 
-        columns=["pop", "disco", "metal", "classical", "rock", "blues", "reggae", "hiphop", 
-        "country", "jazz"])
+    # confusionMatrix = pd.DataFrame(0,index=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 
+    #     columns=["pop", "disco", "metal", "classical", "rock", "blues", "reggae", "hiphop", 
+    #     "country", "jazz"])
+    confusionMatrix = pd.DataFrame(0, index=list(mapIndex.values()), columns=mapIndex.keys())
     
     for i in range(len(testSet)):
         # closestPoints = pd.DataFrame(
@@ -111,9 +115,9 @@ def NNclassifier(testSet, references, distance=euclidianDistance, k=5,
 
 
     
-error, CM = NNclassifier(testSet=testingSet30, references=references)
-print("The error rate is:", error)
-print(CM)
+# error, CM = NNclassifier(testSet=testingSet30, references=references)
+# print("The error rate is:", error)
+# print(CM)
     
 
 
