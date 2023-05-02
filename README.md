@@ -1,5 +1,5 @@
 ## Files ##
-The project report is the TTT4275_Project file. 
+The project report is the TTT4275_Project file, which is a completion of the music classification problem.
 Executable files are found int dist folder. One for each task. They can take up to a couple minutes to execute. 
 
 The command execute the relevant code to generate the error rate and confusion matrix for Task 1
