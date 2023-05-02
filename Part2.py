@@ -1,17 +1,35 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
+from Part1 import NNclassifier
+from Part3 import FEATURES, mapGenre
 
-import Part1 as p1
+feature1 = FEATURES.copy()
+feature2 = FEATURES.copy()
+feature3 = FEATURES.copy()
+feature4 = FEATURES.copy()
 
-features = ['spectral_rolloff_mean', 'mfcc_1_mean', 'spectral_centroid_mean', 'tempo']
-mapGenre = {"pop": 0, "disco": 1, "metal" : 2, "classical" : 3}
+feature1.remove('spectral_rolloff_mean')
+feature2.remove('mfcc_1_mean')
+feature3.remove('spectral_centroid_mean')
+feature4.remove('tempo')
 
+# print("Answer to Task 2a")
+# error, CM = NNclassifier(features=feature1, mapIndex=mapGenre)
+# print(error)
+# print(CM)
 
-training = p1.trainingSet30[p1.trainingSet30.Genre.isin(mapGenre.keys())]
-testing = p1.testingSet30[p1.testingSet30.Genre.isin(mapGenre.keys())]
+# print()
 
+# error, CM = NNclassifier(features=feature2, mapIndex=mapGenre)
+# print(error)
+# print(CM)
 
-errorRate, confusionMatrix = p1.NNclassifier(testing, training, mapGenre, features=features)
-print("The error rate is:", errorRate)
-print(confusionMatrix)
+# print()
+
+# error, CM = NNclassifier(features=feature3, mapIndex=mapGenre)
+# print(error)
+# print(CM)
+
+# print()
+
+# error, CM = NNclassifier(features=feature4, mapIndex=mapGenre)
+# print(error)
+# print(CM)

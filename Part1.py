@@ -1,11 +1,31 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
+import time
 
 
-genreMap = {"pop": 0, "disco": 1, "metal" : 2, "classical" : 3, "rock" : 4,
+ALLFEATURES = ['zero_cross_rate_mean', 'zero_cross_rate_std',       'rmse_mean', 'rmse_var', 'spectral_centroid_mean',
+       'spectral_centroid_var', 'spectral_bandwidth_mean',       'spectral_bandwidth_var', 'spectral_rolloff_mean',
+       'spectral_rolloff_var', 'spectral_contrast_mean',       'spectral_contrast_var', 'spectral_flatness_mean',       
+       'spectral_flatness_var', 'chroma_stft_1_mean', 'chroma_stft_2_mean',
+       'chroma_stft_3_mean', 'chroma_stft_4_mean', 'chroma_stft_5_mean',
+       'chroma_stft_6_mean', 'chroma_stft_7_mean', 'chroma_stft_8_mean',
+       'chroma_stft_9_mean', 'chroma_stft_10_mean', 'chroma_stft_11_mean',
+       'chroma_stft_12_mean', 'chroma_stft_1_std', 'chroma_stft_2_std',
+       'chroma_stft_3_std', 'chroma_stft_4_std', 'chroma_stft_5_std',
+       'chroma_stft_6_std', 'chroma_stft_7_std', 'chroma_stft_8_std',
+       'chroma_stft_9_std', 'chroma_stft_10_std', 'chroma_stft_11_std',
+       'chroma_stft_12_std', 'tempo', 'mfcc_1_mean', 'mfcc_2_mean',
+       'mfcc_3_mean', 'mfcc_4_mean', 'mfcc_5_mean', 'mfcc_6_mean',
+       'mfcc_7_mean', 'mfcc_8_mean', 'mfcc_9_mean', 'mfcc_10_mean',
+       'mfcc_11_mean', 'mfcc_12_mean', 'mfcc_1_std', 'mfcc_2_std',
+       'mfcc_3_std', 'mfcc_4_std', 'mfcc_5_std', 'mfcc_6_std', 'mfcc_7_std',
+       'mfcc_8_std', 'mfcc_9_std', 'mfcc_10_std', 'mfcc_11_std', 'mfcc_12_std',
+       ]
+
+GENREMAP = {"pop": 0, "disco": 1, "metal" : 2, "classical" : 3, "rock" : 4,
             "blues" : 5, "reggae" : 6, "hiphop" : 7, "country" : 8, "jazz" : 9}
 
+genre2 = {"pop": 0, "disco": 1, "metal" : 2, "classical" : 3}
 # ClassData5  = pd.read_table("Classification music(1)\Classification music\GenreClassData_5s.txt")
 # ClassData10 = pd.read_table("Classification music(1)\Classification music\GenreClassData_10s.txt")
 ClassData30 = pd.read_table("Classification music(1)\Classification music\GenreClassData_30s.txt")
@@ -26,71 +46,97 @@ testingSet30 = ClassData30.query("Type == 'Test'")      # Testing set
 
 k = 5
 # features = trainingSet30[['spectral_rolloff_mean', 'mfcc_1_mean', 'spectral_centroid_mean', 'tempo', 'Genre']]
-references = trainingSet30[['spectral_rolloff_mean', 'mfcc_1_mean', 'spectral_centroid_mean', 'tempo', 'Genre']]
+references = trainingSet30[['spectral_rolloff_mean', 'mfcc_1_mean', 'spectral_centroid_mean', 'spectral_rolloff_var']]
 
 def euclidianDistance(x, u):
+    """Calculates the Euclidian distance between the input x and reference u
+    
+    Parameters
+    ----------
+    x : list(int)
+        list of input values
+    u : list(int)
+        list of reference values
+    """
     return np.matmul(np.transpose(x-u), (x-u))
 
+def relativeEuclidian(x, u):
+    """Calculates the relative distance between the input x and reference u
+    
+    Parameters
+    ----------
+    x : list(int)
+        list of input values
+    u : list(int)
+        list of reference values
+    """
+    return np.matmul(np.transpose(np.divide((x-u),u)), np.divide((x-u),u))
 
-def NNclassifier(testSet, 
-        references, 
-        mapIndex=genreMap, 
-        distance=euclidianDistance, k=5, 
+def NNclassifier(data=ClassData30, 
+        mapIndex=GENREMAP, 
+        distance=euclidianDistance, 
+        k=5, 
         features=['spectral_rolloff_mean', 'mfcc_1_mean', 'spectral_centroid_mean', 'tempo']):
     
-    # mapIndex = {"pop": 0, "disco": 1, "metal" : 2, "classical" : 3, "rock" : 4,
-    #             "blues" : 5, "reggae" : 6, "hiphop" : 7, "country" : 8,
-    #             "jazz" : 9}
-    # closestPoints = [(np.inf, 'Genre')] * k
-    # furthestPoint = np.inf
+    """A k-NN classifier for the data.
 
-    # closestPoints = pd.DataFrame(
-    #     {"Distance" : np.full((1,k), np.inf),
-    #     "Genre"    : np.full((1,k), "Genre")})
-    # confusionMatrix = pd.DataFrame(0,index=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 
-    #     columns=["pop", "disco", "metal", "classical", "rock", "blues", "reggae", "hiphop", 
-    #     "country", "jazz"])
-    confusionMatrix = pd.DataFrame(0, index=list(mapIndex.values()), columns=mapIndex.keys())
+
+       Parameters
+        ----------
+        data : pd.Dataframe, optional
+            A pandas dataframe containing the relevant data.
+        mapIndex : list(tuple(str, int)), optional
+            List of the tuple (Genre, index). Genre is a string of a genre in data.
+            index is an integer that corresponds to the row number of Genre in the 
+            generated confusion matrix
+        distane : function, optional
+            A function for the choice of similarity measure. Euclidian distance is
+            the default and recommended in this implementation
+        k : int
+            Determines the k in k-NN classifier. Gives the number of most similar points
+            to consider
+        features : list(string), optional
+            A list of the features the classifier should consider when deciding similarity.
+            Need to correspond to keys in data 
+    """
+    # Create the reference set
+    referenceSet = data.query("Type == 'Train'")
+    referenceSet = referenceSet[referenceSet.Genre.isin(mapIndex.keys())]
+
+    # Create the test set
+    testSet = data.query("Type == 'Test'")
+    testSet = testSet[testSet.Genre.isin(mapIndex.keys())]
     
-    for i in range(len(testSet)):
-        # closestPoints = pd.DataFrame(
-        # {"Distance" : [np.inf] * k,
-        # "Genre"    : ["Genre"] * k})
-        # furthestPoint = closestPoints.max()
-        # distances = []
 
+    start = time.time()
+    # The confusion matrix generated by the classifier
+    confusionMatrix = pd.DataFrame(0, index=list(mapIndex.values()), columns=mapIndex.keys())
+
+    
+    for i in range(len(testSet)): # Iterate over all test points
         closestPoints = [(np.inf, 'Genre')] * k
         furthestPoint = (np.inf, 'Genre')
         
-        x = np.array(testSet.iloc[i, [testSet.columns.get_loc(c) for c in features if c in testSet]])
+        # x is the test point to consider
+        x = np.array(testSet.iloc[i, [testSet.columns.get_loc(c) for c in features]])
         
-        for j in range(len(references)):
-            u = np.array(references.iloc[j, [references.columns.get_loc(c) for c in features if c in references]])
+        for j in range(len(referenceSet)): # Iterate over all reference points
+            # u is the refernce point to consider
+            u = np.array(referenceSet.iloc[j, [referenceSet.columns.get_loc(c) for c in features]])
+            # d is the distance/similarity between the test point and reference point
             d = distance(x, u)
 
 
-            if d < furthestPoint[0]:
+            if d < furthestPoint[0]: # d is closer than the furthest of the k closest points
+                # replace the furthest of the k points with d
                 closestPoints.remove(furthestPoint)
-                closestPoints.append((d, references.iloc[j, references.columns.get_loc("Genre")]))
-                # furthestPoint = (d, references.iloc[j, references.columns.get_loc("Genre")])
-                furthestPoint = max(closestPoints, key = lambda t : t[0])
+                closestPoints.append((d, referenceSet.iloc[j, referenceSet.columns.get_loc("Genre")]))
+                furthestPoint = max(closestPoints, key = lambda t : t[0]) # update the furthest point
 
-            # distances.append(d)
-            # if d < furthestPoint["Distance"]:
-            #     g = references.iat[i, references.columns.get_loc("Genre")]
-            #     closestPoints.at[closestPoints.Distance == furthestPoint.Distance, 'Distance'] = d
-            #     closestPoints.at[closestPoints.Distance == d, 'Genre'] = g
-            #     # closestPoints.at[closestPoints["Distance"] == d, "Genre"] = g
-            #     furthestPoint = closestPoints.max()
-
-            # if d < furthestPoint:
-            #     for k in range(len(closestPoints)):
-            #         if closestPoints[k][0] == furthestPoint:
-            #             closestPoints[k] = (d, testSet[j, ['Genre']])
-            #             furthestPoint = np.max(closestPoints[0])
-        
-        # print(closestPoints)
+        # Sort the closest k points to correctly resolve tiebreaks
         closestPoints.sort(key=lambda x : x[0])
+        
+        # count is a dictionary {genre : int} that counts how many times a genre is in the k closest points
         count = {}
         for z in range(len(closestPoints)):
             if closestPoints[z][1] in count.keys():
@@ -98,27 +144,26 @@ def NNclassifier(testSet,
             else:
                 count[closestPoints[z][1]] = 1
 
-        classification = max(count, key=count.get)                  # Classified genre
-        genre = testSet.iat[i, testSet.columns.get_loc("Genre")] # Actual genre
+        classification = max(count, key=count.get) # Classification is the genre with the k closest points
+        genre = testSet.iat[i, testSet.columns.get_loc("Genre")] # The actual genre at the point
 
         confusionMatrix.at[mapIndex[genre], classification] += 1    # Update the confusion matrix
     
+
+    # The number of correct classifications is on the diagonal 
     correctClassifications = pd.Series(np.diag(confusionMatrix), index=[confusionMatrix.index, confusionMatrix.columns])
     num = correctClassifications.sum()
-    errorRate = 1-num/confusionMatrix.sum().sum()
+    errorRate = 1-num/confusionMatrix.sum().sum() # eer = 1 - correct/total
+    end = time.time()
+    print(end - start, 'Seconds')
+    return errorRate, confusionMatrix 
 
-
-    return errorRate, confusionMatrix
-
-
-    # return closestPoints
-
-
-    
-# error, CM = NNclassifier(testSet=testingSet30, references=references)
-# print("The error rate is:", error)
+# error, CM = NNclassifier()
+# print('Estimated error rate for Task 1:', error)
+# print('Confusion matrix for Task 1')
 # print(CM)
-    
+
+
 
 
 
